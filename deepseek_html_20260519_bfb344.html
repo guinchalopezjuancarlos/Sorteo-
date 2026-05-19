@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dev Guincha | Casino & Apuestas - Emisión de Tickets para Sorteo</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* overlay de ruleta sutil */
+    body::before {
+      content: "♠ ♥ ♣ ♦";
+      font-size: 160px;
+      color: rgba(255, 215, 0, 0.03);
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      pointer-events: none;
+      transform: rotate(-15deg);
+      font-family: monospace;
+      white-space: pre;
+    }
+
+    /* decoraciones deportivas */
+    .sport-deco {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 3rem;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .sport-deco i {
+      margin-right: 10px;
+      text-shadow: 0 0 5px gold;
+    }
+
+    /* contenedor principal */
+    .dashboard {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Cards estilo casino */
+    .card {
+      background: rgba(10, 14, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 48px;
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: all 0.2s ease;
+    }
+
+    .card-header {
+      padding: 1.2rem 2rem;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #ffd966, #ffb347);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .card-body {
+      padding: 1.8rem;
+    }
+
+    /* botones */
+    .btn-casino {
+      background: linear-gradient(95deg, #ffb347 0%, #ff8c1a 100%);
+      border: none;
+      padding: 12px 24px;
+      font-weight: 800;
+      font-size: 1rem;
+      border-radius: 60px;
+      color: #0a0c15;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 5px 0 #b45f06;
+    }
+    .btn-casino:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b45f06;
+    }
+    .btn-outline-gold {
+      background: transparent;
+      border: 2px solid #ffcd4a;
+      color: #ffcd4a;
+      box-shadow: none;
+      transition: 0.2s;
+    }
+    .btn-outline-gold:hover {
+      background: rgba(255, 205, 74, 0.15);
+      transform: scale(0.98);
+    }
+    .btn-danger-gold {
+      background: #2c1a0c;
+      border: 1px solid #ff7b2c;
+      color: #ffa559;
+    }
+
+    /* Ticket generado */
+    .ticket-preview {
+      background: linear-gradient(145deg, #fef7e0, #fff3cf);
+      border-radius: 28px;
+      padding: 1rem 1.5rem;
+      margin-top: 20px;
+      border-left: 10px solid #ffb042;
+      box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+      color: #1e1a0c;
+      font-family: 'Orbitron', monospace;
+      transition: 0.2s;
+    }
+    .ticket-code {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      background: #222;
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 40px;
+      color: #f5bc70;
+      font-family: monospace;
+      margin: 8px 0;
+    }
+
+    /* tabla tickets sorteo */
+    .tickets-table-wrapper {
+      max-height: 380px;
+      overflow-y: auto;
+      border-radius: 28px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: #f0e6d0;
+    }
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    }
+    th {
+      background: rgba(0,0,0,0.5);
+      position: sticky;
+      top: 0;
+      font-family: 'Orbitron', monospace;
+      color: #ffcf4a;
+    }
+    .badge-ticket {
+      background: #2c2b26;
+      border-radius: 30px;
+      padding: 5px 12px;
+      font-family: monospace;
+      font-weight: bold;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+    }
+
+    /* animación de sorteo */
+    .sorteo-animation {
+      background: gold;
+      color: black;
+      font-weight: bold;
+      padding: 12px;
+      border-radius: 60px;
+      text-align: center;
+      animation: pulse 0.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.6; transform: scale(1);}
+      100% { opacity: 1; transform: scale(1.02);}
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .dashboard { flex-direction: column; align-items: center; }
+      .card { width: 100%; }
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #ffd96688;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+<div class="sport-deco">
+  <i class="fas fa-futbol"></i> <i class="fas fa-basketball-ball"></i> <i class="fas fa-dice-d6"></i> <i class="fas fa-horse-head"></i>
+</div>
+
+<div class="dashboard">
+  <!-- COLUMNA IZQUIERDA: EMITIR TICKET -->
+  <div class="card" style="flex: 1.2; min-width: 320px;">
+    <div class="card-header">
+      <i class="fas fa-ticket-alt fa-lg"></i> 
+      <span>🎲 EMITIR NUEVO TICKET 🎰</span>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div style="background: #00000055; border-radius: 60px; padding: 8px 20px;">
+          <i class="fas fa-code-branch"></i> Código único automático
+        </div>
+        <button id="emitirBtn" class="btn-casino"><i class="fas fa-ticket"></i> GENERAR TICKET + SORTEO</button>
+      </div>
+      <div id="ticketDisplay" class="ticket-preview" style="margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span><i class="fas fa-gem" style="color:#b87333;"></i> DEV GUINCHA</span>
+          <span><i class="fas fa-shield-alt"></i> LUCKY TICKET</span>
+        </div>
+        <div style="text-align: center; margin: 10px 0;">
+          <i class="fas fa-dice" style="font-size: 28px;"></i>
+          <div id="generatedCodeDisplay" class="ticket-code">---</div>
+          <div style="font-size: 14px;">VÁLIDO PARA SORTEO DEPORTIVO</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 12px;">
+          <span>🏆 Sorteo mensual</span>
+          <span>⭐ Apuesta responsable</span>
+        </div>
+      </div>
+      <div class="alert-info" style="margin-top: 15px; font-size: 12px; background: rgba(0,0,0,0.4); border-radius: 50px; padding: 10px; text-align: center;">
+        <i class="fas fa-info-circle"></i> Cada ticket se guarda en "Tickets Emitidos" para futuros sorteos.
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: TICKETS GUARDADOS Y SORTEO -->
+  <div class="card" style="flex: 1.8; min-width: 420px;">
+    <div class="card-header">
+      <i class="fas fa-list-ul"></i>
+      <span>🎫 TICKETS EMITIDOS (BASE SORTEO) </span>
+      <span style="font-size: 0.8rem; background: #161f2c; padding: 5px 12px; border-radius: 100px;">participantes</span>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <button id="sortearBtn" class="btn-casino btn-outline-gold"><i class="fas fa-dice-d6"></i> 🎲 SORTEAR GANADOR</button>
+        <button id="limpiarBtn" class="btn-casino btn-danger-gold"><i class="fas fa-trash-alt"></i> LIMPIAR TODOS</button>
+      </div>
+      <div id="resultadoSorteo" style="margin-bottom: 20px; font-weight: bold; background: #1a1e2c; border-radius: 50px; padding: 10px 15px; text-align: center;"></div>
+      <div class="tickets-table-wrapper">
+        <table id="ticketsTable">
+          <thead>
+            <tr><th>#</th><th>Código del Ticket</th><th>Fecha Emisión</th><th>Estado</th></tr>
+          </thead>
+          <tbody id="ticketsListBody">
+            <tr><td colspan="4" class="empty-state"><i class="fas fa-ticket-alt"></i> Aún no hay tickets. Emití tu primer ticket dorado!</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 20px; text-align: right; font-size: 12px;">
+        <i class="fas fa-chart-line"></i> Total tickets: <span id="totalTicketsCount">0</span>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>
+  <i class="fas fa-crown"></i> DEV GUINCHA - Apuestas y Casino. Juega con responsabilidad. Todos los tickets son únicos.
+</footer>
+
+<script>
+  // ------------------------------------------------
+  // 1. Clave de almacenamiento local
+  const STORAGE_KEY = "dev_guincha_tickets";
+
+  // Array de tickets: cada ticket tiene { code, date, id }
+  let ticketsArray = [];
+
+  // Función para guardar en localStorage y actualizar UI
+  function saveTicketsToLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ticketsArray));
+  }
+
+  // Cargar tickets desde localStorage
+  function loadTicketsFromLocal() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        ticketsArray = JSON.parse(stored);
+      } catch(e) { ticketsArray = []; }
+    } else {
+      ticketsArray = [];
+    }
+    // Aseguramos que cada objeto tenga la estructura correcta (por si versiones viejas)
+    ticketsArray = ticketsArray.filter(t => t && t.code && typeof t.code === 'string').map(t => {
+      return {
+        code: t.code,
+        date: t.date || new Date().toLocaleString(),
+        id: t.id || crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random()
+      };
+    });
+    renderTicketTable();
+    updateTotalCounter();
+  }
+
+  // Generar código único de ticket con formato atractivo: EJ: "DG-7F3A-9B2C" más caracteres + aleatorio
+  function generateUniqueTicketCode() {
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+    const part1 = 'DEV' + Math.floor(Math.random() * 90 + 10);
+    let part2 = '';
+    let part3 = '';
+    for (let i = 0; i < 4; i++) part2 += characters.charAt(Math.floor(Math.random() * characters.length));
+    for (let i = 0; i < 4; i++) part3 += characters.charAt(Math.floor(Math.random() * characters.length));
+    let baseCode = `${part1}-${part2}-${part3}`;
+    // Verificar que no exista ya en ticketsArray (unicidad absoluta)
+    let exists = ticketsArray.some(t => t.code === baseCode);
+    while(exists) {
+      // regenerar si colisión (muy improbable pero garantía)
+      const newPart2 = '', newPart3 = '';
+      for (let i = 0; i < 4; i++) newPart2 += characters.charAt(Math.floor(Math.random() * characters.length));
+      for (let i = 0; i < 4; i++) newPart3 += characters.charAt(Math.floor(Math.random() * characters.length));
+      baseCode = `${part1}-${newPart2}-${newPart3}`;
+      exists = ticketsArray.some(t => t.code === baseCode);
+    }
+    return baseCode;
+  }
+
+  // Emitir nuevo ticket: genera codigo, lo guarda, actualiza vista y muestra preview atractivo
+  function emitirTicket() {
+    const newCode = generateUniqueTicketCode();
+    const now = new Date();
+    const fechaFormateada = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    const newTicket = {
+      code: newCode,
+      date: fechaFormateada,
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random() + '-' + newCode
+    };
+    ticketsArray.push(newTicket);
+    saveTicketsToLocal();
+    renderTicketTable();
+    updateTotalCounter();
+    // Mostrar preview del ticket recién generado con efecto visual
+    showTicketPreview(newCode);
+    // Animación extra en el botón (feedback)
+    const emitBtn = document.getElementById('emitirBtn');
+    emitBtn.style.transform = 'scale(0.97)';
+    setTimeout(() => { if(emitBtn) emitBtn.style.transform = ''; }, 120);
+  }
+
+  // Vista previa del último ticket con estilo acorde a casino
+  function showTicketPreview(code) {
+    const displayDiv = document.getElementById('generatedCodeDisplay');
+    if(displayDiv) {
+      displayDiv.innerHTML = code;
+      // efecto de destello
+      const parentTicket = document.getElementById('ticketDisplay');
+      parentTicket.style.transition = '0.2s';
+      parentTicket.style.boxShadow = '0 0 0 2px #ffd966, 0 12px 28px black';
+      setTimeout(() => {
+        if(parentTicket) parentTicket.style.boxShadow = '';
+      }, 800);
+    }
+    // también podemos mostrar un toast breve (no necesario pero guay)
+    const resultDiv = document.getElementById('resultadoSorteo');
+    if(resultDiv && !resultDiv.innerText.includes("GANADOR")) {
+      resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> ✅ Ticket ${code} registrado para el sorteo!`;
+      setTimeout(() => {
+        if(resultDiv.innerText.includes("registrado")) resultDiv.innerHTML = '';
+      }, 2000);
+    }
+  }
+
+  // Renderizar tabla de tickets emitidos (para sorteo)
+  function renderTicketTable() {
+    const tbody = document.getElementById('ticketsListBody');
+    if (!tbody) return;
+    if (!ticketsArray.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-ticket-alt"></i> Sin tickets todavía. Emití uno para participar!</td></tr>';
+      return;
+    }
+    let html = '';
+    ticketsArray.forEach((ticket, idx) => {
+      html += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><span class="badge-ticket"><i class="fas fa-tag"></i> ${ticket.code}</span></td>
+          <td>${ticket.date}</td>
+          <td style="color: #ffb347;"><i class="fas fa-star-of-life"></i> activo</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function updateTotalCounter() {
+    const span = document.getElementById('totalTicketsCount');
+    if(span) span.innerText = ticketsArray.length;
+  }
+
+  // SORTEAR GANADOR: elige un ticket aleatorio del arreglo de tickets emitidos
+  function sortearGanador() {
+    const resultadoDiv = document.getElementById('resultadoSorteo');
+    if (!resultadoDiv) return;
+    if (ticketsArray.length === 0) {
+      resultadoDiv.innerHTML = '<i class="fas fa-times-circle"></i> ❌ No hay tickets para sortear. Emite al menos un ticket.';
+      resultadoDiv.style.background = "#3a1e1e";
+      resultadoDiv.style.color = "#ffaa88";
+      setTimeout(() => {
+        if(resultadoDiv.innerText.includes("No hay tickets")) resultadoDiv.style.background = "#1a1e2c";
+      }, 2500);
+      return;
+    }
+    // Animación efecto ruleta
+    resultadoDiv.innerHTML = '<div class="sorteo-animation"><i class="fas fa-spinner fa-pulse"></i> SORTEANDO... ¡Que gane el mejor!</div>';
+    resultadoDiv.style.background = "#2f2a1f";
+    
+    setTimeout(() => {
+      const indiceGanador = Math.floor(Math.random() * ticketsArray.length);
+      const ticketGanador = ticketsArray[indiceGanador];
+      // mostrar resultado vistoso
+      resultadoDiv.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <i class="fas fa-trophy" style="font-size: 2rem; color: gold;"></i>
+          <span style="font-size: 1.3rem;">🎉 GANADOR 🎉</span>
+          <i class="fas fa-gift" style="font-size: 2rem;"></i>
+        </div>
+        <div style="font-size: 1.5rem; font-family: Orbitron; background: #000000aa; border-radius: 30px; padding: 8px; margin-top: 8px;">
+          ${ticketGanador.code}
+        </div>
+        <div>🏅 Emitido: ${ticketGanador.date}</div>
+        <div><i class="fas fa-champagne-glasses"></i> ¡Felicidades al afortunado!</div>
+      `;
+      resultadoDiv.style.background = "linear-gradient(145deg, #d4af37, #b8860b)";
+      resultadoDiv.style.color = "#1f1a0c";
+      resultadoDiv.style.fontWeight = "bold";
+      // efecto de confetti básico (puro js)
+      createConfetti();
+    }, 800);
+  }
+
+  // Pequeño confetti casero divertido
+  function createConfetti() {
+    const confettiCount = 80;
+    for(let i=0; i<confettiCount; i++) {
+      const conf = document.createElement('div');
+      conf.style.position = 'fixed';
+      conf.style.width = Math.random() * 10 + 4 + 'px';
+      conf.style.height = Math.random() * 8 + 4 + 'px';
+      conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      conf.style.left = Math.random() * window.innerWidth + 'px';
+      conf.style.top = '-20px';
+      conf.style.zIndex = 9999;
+      conf.style.pointerEvents = 'none';
+      conf.style.borderRadius = '2px';
+      conf.style.opacity = '0.8';
+      document.body.appendChild(conf);
+      const animation = conf.animate([
+        { transform: `translateY(0px) rotate(0deg)`, opacity: 1 },
+        { transform: `translateY(${window.innerHeight + 50}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+      ], {
+        duration: Math.random() * 1500 + 800,
+        easing: 'cubic-bezier(0.2, 0.9, 0.4, 1.1)'
+      });
+      animation.onfinish = () => { conf.remove(); };
+    }
+  }
+
+  // Limpiar todos los tickets (confirmación estilo casino)
+  function limpiarTodosTickets() {
+    if (ticketsArray.length === 0) {
+      const resultadoDiv = document.getElementById('resultadoSorteo');
+      if(resultadoDiv) resultadoDiv.innerHTML = '<i class="fas fa-ban"></i> No hay tickets para eliminar.';
+      return;
+    }
+    const confirmar = confirm("⚠️ ¿Estás seguro de borrar TODOS los tickets emitidos? Esta acción es irreversible para el sorteo.");
+    if (confirmar) {
+      ticketsArray = [];
+      saveTicketsToLocal();
+      renderTicketTable();
+      updateTotalCounter();
+      const resultadoDiv = document.getElementById('resultadoSorteo');
+      if(resultadoDiv) resultadoDiv.innerHTML = '<i class="fas fa-broom"></i> Todos los tickets han sido eliminados.';
+      const previewCode = document.getElementById('generatedCodeDisplay');
+      if(previewCode) previewCode.innerHTML = '---';
+      setTimeout(() => {
+        if(resultadoDiv && resultadoDiv.innerText.includes("eliminados")) resultadoDiv.innerHTML = '';
+      }, 2000);
+    } else {
+      const resultadoDiv = document.getElementById('resultadoSorteo');
+      if(resultadoDiv) resultadoDiv.innerHTML = '<i class="fas fa-dice"></i> Cancelado, los tickets continúan en la base.';
+      setTimeout(() => {
+        if(resultadoDiv && resultadoDiv.innerText.includes("Cancelado")) resultadoDiv.innerHTML = '';
+      }, 1500);
+    }
+  }
+
+  // Eventos y carga inicial
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTicketsFromLocal();
+    // Si no hay data de ejemplo pero queremos algo demo (opcional: un ticket ejemplo para que vean la estética?)
+    // Opcional: si la lista está vacía, podríamos agregar un ticket de bienvenida? pero es mejor que el usuario genere.
+    // pero nada, lo dejamos asi.
+    
+    const emitBtn = document.getElementById('emitirBtn');
+    if(emitBtn) emitBtn.addEventListener('click', emitirTicket);
+    
+    const sortearBtn = document.getElementById('sortearBtn');
+    if(sortearBtn) sortearBtn.addEventListener('click', sortearGanador);
+    
+    const limpiarBtn = document.getElementById('limpiarBtn');
+    if(limpiarBtn) limpiarBtn.addEventListener('click', limpiarTodosTickets);
+    
+    // Pequeña animación inicial si hay tickets mostrar preview de alguno ? no necesario.
+    if(ticketsArray.length > 0) {
+      const ultimo = ticketsArray[ticketsArray.length-1];
+      if(ultimo) showTicketPreview(ultimo.code);
+    } else {
+      // mostrar mensaje en preview del ticket
+      document.getElementById('generatedCodeDisplay').innerHTML = '⚡ LISTO ⚡';
+    }
+  });
+</script>
+</body>
+</html>
